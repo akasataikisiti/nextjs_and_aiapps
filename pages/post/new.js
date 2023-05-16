@@ -11,8 +11,6 @@ export default function NewPost(props) {
 
 export const getServerSideProps = withPageAuthRequired(() => {
   return {
-    props: {
-      test: "this is a test",
-    },
+    props: {},
   };
 });
