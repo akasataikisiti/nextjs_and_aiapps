@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ObjectId } from "mongodb";
 import { AppLayout } from "../../components/AppLayout/AppLayout";
 import clientPromise from "../../lib/mongodb";
+import { getAppProps } from "../../utils/getAppProps";
 
 export default function Post(props) {
   console.log("PROPS :", props);
@@ -48,6 +49,7 @@ Post.getLayout = (page, pageProps) => {
 
 export const getServerSideProps = withPageAuthRequired({
   async getServerSideProps(ctx) {
+    const props = await getAppProps(ctx);
     const userSession = await getSession(ctx.req, ctx.res);
     const client = await clientPromise;
     const db = client.db("BlogStandard");
@@ -74,6 +76,7 @@ export const getServerSideProps = withPageAuthRequired({
         title: post.title,
         metaDescription: post.metaDescription,
         keywords: post.keywords,
+        ...props,
       },
     };
   },
