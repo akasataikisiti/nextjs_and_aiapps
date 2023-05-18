@@ -1,6 +1,20 @@
+import { getSession, withApiAuthRequired } from "@auth0/nextjs-auth0";
 import { Configuration, OpenAIApi } from "openai";
+import clientPromise from "../../lib/mongodb";
 
-export default async function handler(req, res) {
+export default withApiAuthRequired(async function handler(req, res) {
+  const { user } = await getSession(req, res);
+  const client = await clientPromise;
+  const db = client.db("BlogStandard");
+  const userProfile = await db.collection("users").findOne({
+    auth0Id: user.sub,
+  });
+
+  if (!userProfile?.availableTokens) {
+    res.status(403);
+    return;
+  }
+
   const config = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -8,10 +22,9 @@ export default async function handler(req, res) {
 
   const { topic, keywords } = req.body;
 
-  // const topic = "Top 10 tips for dog owners";
-  // const keywords =
   ("first--time dog owners, common dog health issues, best dog breeds");
 
+  // openaiで記事を作成する
   const response = await openai.createCompletion({
     model: "text-davinci-003",
     temperature: 0,
@@ -29,7 +42,34 @@ export default async function handler(req, res) {
 
   console.log("response: ", response.data.choices);
 
+  // ユーザのトークンを減らす
+  await db.collection("users").updateOne(
+    {
+      auth0Id: user.sub,
+    },
+    {
+      $inc: {
+        availableTokens: -1,
+      },
+    }
+  );
+
+  // 返却値をJSON文字列の形にしてからパースする
+  const parsed = JSON.parse(
+    response.data.choices[0]?.text.split("\n").join("")
+  );
+
+  const post = await db.collection("posts").insertOne({
+    postContent: parsed?.postContent,
+    title: parsed?.title,
+    metaDescription: parsed?.metaDescription,
+    topic,
+    keywords,
+    userId: userProfile._id,
+    created: new Date(),
+  });
+
   res.status(200).json({
     post: JSON.parse(response.data.choices[0]?.text.split("\n").join("")),
   });
-}
+});
