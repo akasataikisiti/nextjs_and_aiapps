@@ -29,7 +29,7 @@ export default withApiAuthRequired(async function handler(req, res) {
     model: "text-davinci-003",
     temperature: 0,
     max_tokens: 3600,
-    prompt: `Write a long and detailed SEO-friendly blog post about ${topic}, that targets the following comma-separated keyvowrds: ${keywords}.
+    prompt: `Write a long and detailed SEO-friendly blog post in Japanese Language about ${topic}, that targets the following comma-separated keyvowrds: ${keywords}.
     The content should be formatted in SEO-friendly HTML.
     The response must also include appropriate HTML title and meta description content.
     The return format must be stringified JSON in the following format:
@@ -68,8 +68,9 @@ export default withApiAuthRequired(async function handler(req, res) {
     userId: userProfile._id,
     created: new Date(),
   });
+  console.log("post: ", post);
 
   res.status(200).json({
-    post: JSON.parse(response.data.choices[0]?.text.split("\n").join("")),
+    postId: post.insertedId,
   });
 });
