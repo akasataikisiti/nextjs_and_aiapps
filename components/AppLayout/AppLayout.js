@@ -4,9 +4,22 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCoins } from "@fortawesome/free-solid-svg-icons";
 import { Logo } from "../Logo";
+import PostsContext from "../../context/postsContext";
+import { useContext, useEffect } from "react";
 
-export const AppLayout = ({ children, ...rest }) => {
+export const AppLayout = ({
+  children,
+  availableTokens,
+  posts: postsFromSSR,
+  postId,
+}) => {
   const { user } = useUser();
+  const { setPostsFromSSR, posts } = useContext(PostsContext);
+
+  useEffect(() => {
+    setPostsFromSSR(postsFromSSR);
+  }, [postsFromSSR, setPostsFromSSR]);
+
   return (
     <div className="grid grid-cols-[300px_1fr] h-screen max-h-screen">
       <div className="flex flex-col text-white overflow-hidden">
@@ -17,21 +30,24 @@ export const AppLayout = ({ children, ...rest }) => {
           </Link>
           <Link href="/token-topup" className="block mt-2 text-center">
             <FontAwesomeIcon icon={faCoins} className="text-yellow-500" />
-            <span className="pl-1">{rest.availableTokens}</span>
+            <span className="pl-1">{availableTokens}</span>
           </Link>
         </div>
         <div className="px-4 flex-1 overflow-auto bg-gradient-to-b from-slate-800 to-cyan-800">
-          {rest.posts.map((post) => (
+          {posts.map((post) => (
             <Link
               key={post._id}
               href={`/post/${post._id}`}
               className={`py-q border border-white/0 block text-ellipsis over-hidden whitespace-nowrap my-1 px-2 bg-white/10 cursor-pointer rounded-sm ${
-                rest.postId === post._id ? "bg-white/20 border-white" : ""
+                postId === post._id ? "bg-white/20 border-white" : ""
               }`}
             >
               {post.topic}
             </Link>
           ))}
+          <div className="hover:underline text-sm text-slate-400 text-center cursor-pointer mt-4">
+            Load more posts
+          </div>
         </div>
         <div className="bg-cyan-800 flex items-center gap-2 border-t border-t-black/50 h-20 px-2">
           {!!user ? (
