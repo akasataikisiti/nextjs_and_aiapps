@@ -10,15 +10,15 @@ export default withApiAuthRequired(async function handler(req, res) {
     const db = client.db("BlogStandard");
     const userProfile = await db.collection("users").findOne({ auth0Id: sub });
 
-    const { lastPostDate } = req.body;
+    const { lastPostDate, getNewerPosts } = req.body;
     console.log("testtest");
     const posts = await db
       .collection("posts")
       .find({
         userId: userProfile._id,
-        created: { $lt: new Date(lastPostDate) },
+        created: { [getNewerPosts ? "$gt" : "$lt"]: new Date(lastPostDate) },
       })
-      .limit(5)
+      .limit(getNewerPosts ? 0 : 5)
       .sort({ created: -1 })
       .toArray();
 
