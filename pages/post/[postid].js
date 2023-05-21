@@ -2,12 +2,33 @@ import { getSession, withPageAuthRequired } from "@auth0/nextjs-auth0";
 import { faHashtag } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ObjectId } from "mongodb";
+import { useRouter } from "next/router";
+import { useState } from "react";
 import { AppLayout } from "../../components/AppLayout/AppLayout";
 import clientPromise from "../../lib/mongodb";
 import { getAppProps } from "../../utils/getAppProps";
 
 export default function Post(props) {
   console.log("PROPS :", props);
+  const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await fetch(`/api/deletePost`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ postId: props.id }),
+      });
+      const json = await response.json();
+      if (json.success) {
+        router.replace("/post/new");
+      }
+    } catch (e) {}
+  };
+
   return (
     <div className="overflow-auto h-full">
       <div>
@@ -36,6 +57,38 @@ export default function Post(props) {
             Blog post
           </div>
           <div dangerouslySetInnerHTML={{ __html: props.postContent || "" }} />
+          {!showDeleteConfirm && (
+            <div className="my-4">
+              <button
+                className="btn bg-red-600 hover:bg-red-700"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete post
+              </button>
+            </div>
+          )}
+          {!!showDeleteConfirm && (
+            <div>
+              <p className="p-2 bg-red-300 text-center">
+                Are you sure you want to delete this post? This action is
+                irreversible
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="btn bg-stone-600 hover:bg-stone-700"
+                >
+                  cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="btn bg-red-600 hover:bg-red-700"
+                >
+                  confirm delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -72,6 +125,7 @@ export const getServerSideProps = withPageAuthRequired({
 
     return {
       props: {
+        id: ctx.params.postid,
         postContent: post.postContent,
         title: post.title,
         metaDescription: post.metaDescription,
